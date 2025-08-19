@@ -1,0 +1,35 @@
+ok to begin here is an outline of what we need...
+
+1. 1st off we need flags. 
+flags will be used to detemrine if a building exists...
+if a building exsits then we can make it so
+check every 10 seconds if it exists.
+if it does then a flag goes up for number of thay recourse building.
+so then theres another flag. the flag for your recourses
+how many of you have. 
+the 1st flag i mentioned is for the number
+of building. number of building determine if flag mumebr goes up or down.
+
+2. now how do uou build the buildings in skirmish?
+well you may build themarround your Town Center.
+your town center is the center of your camp.
+you can build other town Centers located theoughout the map.
+
+everything needs a worker which is why you need town centers.
+they build stuff.
+
+now how do you make it so so you can build on the pads arround the center?
+lua code. you build that and its like a metric system
+where you build and you get position of that onject.
+then it spawns depending on the faction your build pad.
+where you can build what you want on it.
+
+ok now were going to talk about God Powers.
+its quite Simple... we can simulate them using abilities
+for example for a plague we cna spawn a unit whcih then after 5 seconds will die.
+thus you get it.
+
+ok now how do units work? so each barracks has its own
+Multiplayer stuff.
+so like ships dont come from space... so instead when you build it,
+it makes it so it spawns a unit instead at pre determined markers...
