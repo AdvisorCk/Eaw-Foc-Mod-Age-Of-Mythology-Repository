@@ -33,3 +33,55 @@ ok now how do units work? so each barracks has its own
 Multiplayer stuff.
 so like ships dont come from space... so instead when you build it,
 it makes it so it spawns a unit instead at pre determined markers...
+
+
+ok Xml Code... 
+STORY_CONSTRUCT¶
+
+Parameter 1: Unit type (multiple possible for 'or' condition)
+Parameter 2: Number (multiple possible but broken for any but the first (will use either 1 if not set or the first number))
+Parameter 3: Filter
+Multiple unit types can be set (whitespace separated), however the counting behaves strangely. The event will trigger if the given number of units of the first type is built or one unit of the other types.
+
+STORY_DESTROY¶
+
+Parameter 1: Unit type
+Parameter 2: Planet
+Parameter 3: Number
+Parameter 4: Filter
+Multiple values for the parameters should be possible but at least for parameter 3 it doesn't look like it works correctly.
+
+
+ok so the Lua code we might need...
+
+Xml Event Manipulation¶
+
+Function	Parameters	Usage
+Story_Event(X,Y)	X = string, Y = game object(optional)	Trigger a STORY_AI_NOTIFICATION event
+Check_Story_Flag(X,Y,Z,U)	X = player, Y = string, Z = game object, U = bool	Checks if corresponding reward type TRIGGER_AI has fired. The final parameter causes the flag to be reset if set to true.
+Get_Story_Plot(X)	X = string (story_file_name.xml)	Returns the story file as StoryPlotWrapper object. The parameter is case sensitive.
+StoryPlotWrapper Functions¶
+
+Function	Parameters	Usage
+.Get_Event(X)	X = string(Event name)	Returns the xml event as StoryEventWrapper object.
+.Suspend()	-	Suspends the plot
+.Activate()	-	Activates the plot
+.Reset()	-	Resets all events of the plot
+StoryEventWrapper Functions¶
+
+Function	Parameters	Usage
+.Set_Reward_Type(X)	X = string(reward type)	-
+.Set_Reward_Parameter(X,Y)	X = number, Y = something that makes sense	Sets Reward_Param(X+1) as Y (X is 0 for Reward_Param1). Unlike Set_Event_Parameter this command cannot take more than 2 parameters.
+.Set_Event_Parameter(X, Y, ...)	X = number, Y = something that makes sense	Sets Event_Param(X+1) as Y (X is 0 for Event_Param1). Can take more than 2 parameters to set e.g. multiple object types for a single event parameter.
+.Set_Dialog(X)	X = string(dialog file name)	Sets the dialog file.
+.Clear_Dialog_Text()	-	-
+.Add_Dialog_Text(X,...)	X = string(text identifier from dat file)	The text will be formatted with any additional parameters given.
+PositionWrapper Functions¶
+
+Function	Parameters	Usage
+.Get_XYZ()	-	Returns the three coordinate values of the position. Only exists in steam version since the Hanuary 2021 patch.
+
+Lua code outline wjtb what we got...
+
+
+Check_Story_Flag(X,Y,Z,U)	X = player, Y = string, Z = game object, U = bool	Checks if corresponding reward type TRIGGER_AI has fired. The final parameter causes the flag to be reset if set to true.
