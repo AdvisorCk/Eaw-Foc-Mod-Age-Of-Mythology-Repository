@@ -1,0 +1,230 @@
+ok town center Lua coding
+
+so in Age of Empires the Ds game, you could have 
+town centers
+
+building on that, the way it would work is that
+you need to have a build pad.
+
+that build pad has a number called...
+
+so the Middle one is a town center whcih you can build workers
+
+
+everything builds and their is no "reinforcemnts from space"
+
+you build on land and it spawns at the marker coorosponding to that building.
+
+
+ok so 1st...
+
+
+Create_Position(X, Y, Z)	X = number, Y = number, Z = number	Creates a PositionWrapper object from the given coordinates and returns it. Only exists in steam version since the January 2021 patch.
+
+
+.Get_XYZ()	-	Returns the three coordinate values of the position. Only exists in steam version since the Hanuary 2021 patch.
+ok
+
+.Get_Tech_Level()	-	-
+Get_Game_Mode()	-	Returns "Land", "Space" or "Galactic"
+.Get_Team()	-	Team ID in skirmish
+
+
+
+
+ok heres the Lua Code...
+--========================================================
+-- SECTION 1: TOWN CENTER → PAD ASSIGNMENTS
+--========================================================
+local TOWN_CENTER_PADS = {
+    Town_Center_1 = {
+        { pad = Build_Pad_1 },  { pad = Build_Pad_2 },  { pad = Build_Pad_3 },  { pad = Build_Pad_4 },
+        { pad = Build_Pad_5 },  { pad = Build_Pad_6 },  { pad = Build_Pad_7 },  { pad = Build_Pad_8 }
+    },
+    Town_Center_2 = {
+        { pad = Build_Pad_9 },  { pad = Build_Pad_10 }, { pad = Build_Pad_11 }, { pad = Build_Pad_12 },
+        { pad = Build_Pad_13 }, { pad = Build_Pad_14 }, { pad = Build_Pad_15 }, { pad = Build_Pad_16 }
+    },
+    Town_Center_3 = {
+        { pad = Build_Pad_17 }, { pad = Build_Pad_18 }, { pad = Build_Pad_19 }, { pad = Build_Pad_20 },
+        { pad = Build_Pad_21 }, { pad = Build_Pad_22 }, { pad = Build_Pad_23 }, { pad = Build_Pad_24 }
+    },
+    Town_Center_4 = {
+        { pad = Build_Pad_25 }, { pad = Build_Pad_26 }, { pad = Build_Pad_27 }, { pad = Build_Pad_28 },
+        { pad = Build_Pad_29 }, { pad = Build_Pad_30 }, { pad = Build_Pad_31 }, { pad = Build_Pad_32 }
+    },
+    Town_Center_5 = {
+        { pad = Build_Pad_33 }, { pad = Build_Pad_34 }, { pad = Build_Pad_35 }, { pad = Build_Pad_36 },
+        { pad = Build_Pad_37 }, { pad = Build_Pad_38 }, { pad = Build_Pad_39 }, { pad = Build_Pad_40 }
+    }
+}
+
+--========================================================
+-- SECTION 2: TRIGGER UNITS → BUILDINGS
+--========================================================
+local TRIGGER_UNIT_TO_BUILDING = {}
+local building_types = { "Shrine", "Barracks", "Stable", "Siege_Workshop", "Archery_Range" }
+
+for tc_index = 1, 5 do
+    local tc_name = "Town_Center_" .. tc_index
+    for pad_index = 1, 8 do
+        for _, bname in ipairs(building_types) do
+            local trigger_name = string.format("TC%d_Pad%d_%s_Trigger", tc_index, pad_index, bname)
+            TRIGGER_UNIT_TO_BUILDING[trigger_name] = {
+                town_center = tc_name,
+                pad_index = pad_index,
+                building = bname
+            }
+        end
+    end
+end
+
+--========================================================
+-- SECTION 2B: PAD GROUPS FOR LOCK/UNLOCK
+--========================================================
+local PAD_GROUPS = {}
+for tc_index = 1, 5 do
+    local tc_name = "Town_Center_" .. tc_index
+    PAD_GROUPS[tc_name] = { group1 = {}, group2 = {}, group3 = {} }
+
+    for pad_index = 1, 8 do
+        for _, bname in ipairs(building_types) do
+            local trigger_name = string.format("TC%d_Pad%d_%s_Trigger", tc_index, pad_index, bname)
+            if pad_index >= 1 and pad_index <= 3 then
+                table.insert(PAD_GROUPS[tc_name].group1, trigger_name)
+            elseif pad_index >= 4 and pad_index <= 6 then
+                table.insert(PAD_GROUPS[tc_name].group2, trigger_name)
+            elseif pad_index >= 7 and pad_index <= 8 then
+                table.insert(PAD_GROUPS[tc_name].group3, trigger_name)
+            end
+        end
+    end
+end
+
+--========================================================
+-- SECTION 2C: LOCK/UNLOCK FUNCTION
+--========================================================
+function Set_Town_Center_Group(player, tc_name, group_name)
+    -- Lock all trigger units for this TC
+    for _, group in pairs(PAD_GROUPS[tc_name]) do
+        for _, trigger_unit in ipairs(group) do
+            player:Lock_Tech(trigger_unit)
+        end
+    end
+    -- Unlock only the chosen group
+    for _, trigger_unit in ipairs(PAD_GROUPS[tc_name][group_name]) do
+        player:Unlock_Tech(trigger_unit)
+    end
+end
+
+--========================================================
+-- SECTION 3: BUILDINGS → UNITS TO SPAWN
+--========================================================
+local BUILDING_TO_UNIT = {
+    Shrine          = "Priest_Unit",
+    Barracks        = "Infantry_Unit",
+    Stable          = "Cavalry_Unit",
+    Siege_Workshop  = "Siege_Unit",
+    Archery_Range   = "Archer_Unit"
+}
+
+--========================================================
+-- SECTION 4: PAD → MARKER MAPPING
+--========================================================
+function Get_Marker_For_Pad(pad)
+    local pad_name = pad:Get_Type():Get_Name()
+    for i = 1, 40 do
+        if pad_name == ("Build_Pad_" .. i) then
+            return _G["Marker_" .. i]
+        end
+    end
+    return nil
+end
+
+--========================================================
+-- SECTION 5: TRIGGER UNIT HANDLING
+--========================================================
+function On_Trigger_Unit_Built(player, trigger_unit, planet)
+    local trigger_name = trigger_unit:Get_Type():Get_Name()
+    local data = TRIGGER_UNIT_TO_BUILDING[trigger_name]
+    if not data then return end
+
+    -- Determine which group this pad belongs to
+    local group_name
+    if data.pad_index >= 1 and data.pad_index <= 3 then
+        group_name = "group1"
+    elseif data.pad_index >= 4 and data.pad_index <= 6 then
+        group_name = "group2"
+    elseif data.pad_index >= 7 and data.pad_index <= 8 then
+        group_name = "group3"
+    end
+
+    -- Lock other groups for this TC
+    if group_name then
+        Set_Town_Center_Group(player, data.town_center, group_name)
+    end
+
+    -- Build the building
+    local pad_entry = TOWN_CENTER_PADS[data.town_center][data.pad_index]
+    if not pad_entry then return end
+
+    local pad = pad_entry.pad
+    if TestValid(pad) then
+        local current_building = pad:Get_Build_Pad_Contents()
+        if not TestValid(current_building) then
+            pad:Build(data.building, pad)
+            local new_building = pad:Get_Build_Pad_Contents()
+            if TestValid(new_building) then
+                pad:Lock_Build_Pad_Contents(true)
+            end
+        end
+    end
+
+    Sleep(2.0)
+    if TestValid(trigger_unit) then
+        trigger_unit:Despawn()
+    end
+end
+
+--========================================================
+-- SECTION 6: CONTINUOUS SPAWN LOOP
+--========================================================
+function Start_Pad_Spawn_Loop()
+    Create_Thread(Pad_Spawn_Loop)
+end
+
+function Pad_Spawn_Loop()
+    while true do
+        for _, pads in pairs(TOWN_CENTER_PADS) do
+            for _, entry in ipairs(pads) do
+                local pad = entry.pad
+                if TestValid(pad) then
+                    local building = pad:Get_Build_Pad_Contents()
+                    if TestValid(building) and building:Get_Hull() > 0 then
+                        pad:Lock_Build_Pad_Contents(true)
+                        local bname = building:Get_Type():Get_Name()
+                        local unit_to_spawn = BUILDING_TO_UNIT[bname]
+                        if unit_to_spawn then
+                            local player = building:Get_Owner()
+                            local marker = Get_Marker_For_Pad(pad)
+                            if TestValid(marker) then
+                                local x, y, z = marker:Get_Position():Get_XYZ()
+                                Create_Generic_Object(unit_to_spawn, {x, y, z}, player)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        Sleep(10.0)
+    end
+end
+
+--========================================================
+-- SECTION 7: INITIALIZATION
+--========================================================
+function On_Init()
+    Start_Pad_Spawn_Loop()
+end
+
+
