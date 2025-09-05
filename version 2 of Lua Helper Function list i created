@@ -1,0 +1,217 @@
+-- =========================
+-- Empire at War: FoC Helper Library
+-- =========================
+-- Author: [Your Name]
+-- Purpose: Wrapper functions for FoC Lua API with safety checks & logging
+-- =========================
+
+-- Debug print wrapper
+function Log(msg)
+    _OuputDebug("[FoC Script] " .. tostring(msg))
+end
+
+-- =========================
+-- PLAYER & PLANET HELPERS
+-- =========================
+
+function GetPlayer(faction_name)
+    local player = Find_Player(faction_name)
+    if not player then Log("Player not found: " .. tostring(faction_name)) end
+    return player
+end
+
+function GetPlanet(planet_name)
+    local planet = FindPlanet(planet_name)
+    if not planet then Log("Planet not found: " .. tostring(planet_name)) end
+    return planet
+end
+
+-- =========================
+-- SPAWNING HELPERS
+-- =========================
+
+function SpawnUnitAtPlanet(unit_type, planet_name, faction_name)
+    local planet = GetPlanet(planet_name)
+    local player = GetPlayer(faction_name)
+    if planet and player then
+        local spawned = Spawn_Unit(unit_type, planet, player)
+        Log("Spawned " .. unit_type .. " at " .. planet_name .. " for " .. faction_name)
+        return spawned
+    end
+    return nil
+end
+
+function SpawnFleetAtPlanet(unit_list, planet_name, faction_name)
+    for _, unit in ipairs(unit_list) do
+        SpawnUnitAtPlanet(unit, planet_name, faction_name)
+    end
+end
+
+-- =========================
+-- OBJECTIVES & UI
+-- =========================
+
+function AddMissionObjective(text_id, is_battle_info)
+    Add_Objective(text_id, is_battle_info)
+    Log("Objective added: " .. text_id)
+end
+
+function ShowGameMessage(text_id)
+    Game_Message(text_id)
+    Log("Game message shown: " .. text_id)
+end
+
+-- =========================
+-- RADAR & MAP HELPERS
+-- =========================
+
+function AddRadarBlipToPlanet(planet_name)
+    local planet = GetPlanet(planet_name)
+    if planet then Add_Radar_Blip(planet) end
+end
+
+function RemoveRadarBlipFromPlanet(planet_name)
+    local planet = GetPlanet(planet_name)
+    if planet then Remove_Radar_Blip(planet) end
+end
+
+-- =========================
+-- ENVIRONMENT CHECKS
+-- =========================
+
+function IsInAsteroidField(obj) return Is_Point_In_Asteroid_Field(obj) end
+function IsInNebula(obj) return Is_Point_In_Nebula(obj) end
+function IsInIonStorm(obj) return Is_Point_In_Ion_Storm(obj) end
+
+-- =========================
+-- CAMERA & CINEMATICS
+-- =========================
+
+function StartCinematicRetreat(player_id, delay)
+    Start_Cinematic_Space_Retreat(player_id, delay or 0)
+    Log("Cinematic retreat started for player ID " .. tostring(player_id))
+end
+
+function StartCinematicMode() Start_Cinematic_Mode() end
+function EndCinematicMode() End_Cinematic_Mode() end
+function SetCinematicEnvironment(state) Set_Cinematic_Environment(state) end
+function PromoteToCinematicLayer(obj) if obj then Promote_To_Space_Cinematic_Layer(obj) end
+function PointCameraAt(target) if target then Point_Camera_At(target) end
+function FadeOut(time) Fade_Screen_Out(time or 1) end
+function FadeIn(time) Fade_Screen_In(time or 1) end
+function LetterBoxIn(time) Letter_Box_In(time or 1) end
+function LetterBoxOut(time) Letter_Box_Out(time or 1) end
+
+-- =========================
+-- MEDIA & ENVIRONMENT
+-- =========================
+
+function PlayMusic(event_name) Play_Music(event_name) end
+function StopAllMusic() Stop_All_Music() end
+function PlayLightningEffect(effect, source_pos, target_pos)
+    return Play_Lightning_Effect(effect, source_pos, target_pos)
+end
+
+-- =========================
+-- GUI HELPERS (Steam version only)
+-- =========================
+
+function SetGUIVisibility(name, visible) GUI_Component_Visibility(name, visible) end
+function SetGUIText(name, text_id) GUI_Component_Text(name, text_id) end
+
+-- =========================
+-- RANDOMIZATION
+-- =========================
+
+function RandInt(min, max) return GameRandom(min, max) end
+function RandFloat(min, max)
+    if min and max then return GameRandom.Get_Float(min, max)
+    else return GameRandom.Get_Float() end
+end
+
+-- =========================
+-- MULTITHREADING
+-- =========================
+
+function StartThread(func_name, param)
+    local id = Create_Thread(func_name, param)
+    Log("Thread started: " .. tostring(func_name) .. " (ID " .. tostring(id) .. ")")
+    return id
+end
+
+function KillThread(id) Thread.Kill(id) end
+function KillAllThreads() Thread.Kill_All() end
+
+-- =========================
+-- GLOBAL & THREAD VALUES
+-- =========================
+
+function SetGlobalValue(key, value) GlobalValue.Set(key, value) end
+function GetGlobalValue(key) return GlobalValue.Get(key) end
+function SetThreadValue(key, value) ThreadValue.Set(key, value) end
+function GetThreadValue(key) return ThreadValue.Get(key) end
+function ResetThreadValue(key) ThreadValue.Reset(key) end
+
+-- =========================
+-- DISCRETE DISTRIBUTIONS
+-- =========================
+
+function CreateDistribution() return DiscreteDistribution.Create() end
+function DistributionInsert(dist, element, weight) dist:Insert(element, weight) end
+function DistributionSample(dist) return dist:Sample() end
+
+-- =========================
+-- WEIGHTED TYPE LISTS
+-- =========================
+
+function CreateWeightedTypeList() return WeightedTypeList.Create() end
+function ParseWeightedTypeList(wtl, types, weights) wtl:Parse(types, weights) end
+function EvaluateTypes(player, target, wtl) return EvaluateTypeList(player, target, wtl) end
+
+-- =========================
+-- FOG OF WAR
+-- =========================
+
+function RevealAllFoW(player) FogOfWar.Reveal_All(player) end
+function RevealFoW(player, pos, radius) return FogOfWar.Reveal(player, pos, radius) end
+function TempRevealFoW(player, obj, radius) FogOfWar.Temporary_Reveal(player, obj, radius) end
+function DisableFoWRendering(state) FogOfWar.Disable_Rendering(state) end
+function UndoFoWReveal(fow_cells) fow_cells:Undo_Reveal() end
+
+-- =========================
+-- STORY / XML EVENTS
+-- =========================
+
+function TriggerStoryEvent(event_name, obj) Story_Event(event_name, obj) end
+function CheckStoryFlag(player, flag, obj, reset) return Check_Story_Flag(player, flag, obj, reset) end
+function GetStoryPlot(file) return Get_Story_Plot(file) end
+function GetStoryEvent(plot, event_name) return plot:Get_Event(event_name) end
+
+-- =========================
+-- POSITION WRAPPER
+-- =========================
+
+function GetXYZ(pos) return pos:Get_XYZ() end
+
+-- =========================
+-- GAME OBJECT WRAPPER HELPERS
+-- =========================
+
+function Despawn(obj) obj:Despawn() end
+function MoveTo(obj, target) return obj:Move_To(target) end
+function AttackMove(obj, target) return obj:Attack_Move(target) end
+function AttackTarget(obj, target) return obj:Attack_Target(target) end
+function GuardTarget(obj, target) return obj:Guard_Target(target) end
+function StopUnit(obj) obj:Stop() end
+function GetPosition(obj) return obj:Get_Position() end
+function ActivateAbility(obj, ability, target_or_state) return obj:Activate_Ability(ability, target_or_state) end
+function ResetAbilityCooldown(obj) obj:Reset_Ability_Counter() end
+function SetAllAbilitiesAutofire(obj, state) obj:Set_All_Abilities_Autofire(state) end
+function IsAbilityReady(obj, ability) return obj:Is_Ability_Ready(ability) end
+function TakeDamage(obj, amount, hardpoint) obj:Take_Damage(amount, hardpoint) end
+function HyperspaceAway(obj, delete) obj:Hyperspace_Away(delete) end
+function HideObject(obj, state) obj:Hide(state) end
+function ChangeOwner(obj, player) obj:Change_Owner(player) end
+function Teleport(obj, pos) obj:Teleport(pos) end
+function MakeInvulnerable(obj, state) obj:Make_Invulnerable(state) end
+function SetSelectable(obj, state) obj:Set_Selectable(state) end
